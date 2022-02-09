@@ -1,0 +1,79 @@
+extract $;
+extract obj_props;
+
+type @Vector
+impl @Vector {
+    new: #[constructor, desc("Returns new vector")] 
+        (xInp: @number = 0, yInp: @number = 0) { 
+            return @Vector::{x: xInp, y: yInp}
+        }
+}
+
+let PI = 3.1415926535897932;
+
+//main
+vecAdd = #[desc("Returns a sum of all input[] vectors")]
+    (vec: [@Vector]) { 
+        let totalX = 0; let totalY = 0;
+        for cur in vec { totalX += cur.x; totalY += cur.y;} 
+        return @Vector::{x: totalX, y: totalY} 
+    }
+vecSub = #[desc("Substracts 2 vectors, output vector has a direction from 2nd to 1st")]
+    (vec1: @Vector, vec2: @Vector) { return @Vector::{x: vec1.x-vec2.x, y: vec1.y-vec2.y} }
+vecMult = #[desc("Multiplies vector by number or other vector")]
+    (vec1: @Vector, mult) {
+        return switch mult { //0.8 on mac when
+            @number: @Vector::{ x: vec1.x * mult, y: vec1.y * mult },
+            @Vector: @Vector::{ x: vec1.x * mult.x, y: vec1.y * mult.y },
+        } 
+    }
+vecLength = #[desc("Returns the length of the vector")]
+    (vec1: @Vector) { return sqrt(vec1.x ^ 2 + vec1.y ^ 2) };
+vecNorm = #[desc("Normalizes vector (sets the length to 1)")]
+    (vec1: @Vector) { return vecMult(vec1, 1 / vecLength(vec1))};
+vecIsNorm = #[desc("Returns true/false based on it's normalization")]
+    (vec1: @Vector) { return true if vecLength(vec1) == 1 else false }
+vecRot = #[desc("Returns the angle of vector/angle between 2 vectors")]
+    (vec1: @Vector, vec2: @Vector = {x:0,y:0}) {
+        let vec1Rot = atan2(vec1.x,vec1.y); let vec2Rot = atan2(vec2.x,vec2.y);
+        fin = vec1Rot - vec2Rot if vec1Rot > vec2Rot else vec2Rot - vec1Rot;
+        return 180 * fin / PI;
+    };
+vecDistance = #[desc("Returns the distance between 2 vectors")]
+    (vec1: @Vector, vec2: @Vector) {
+        return sqrt((vec1.x - vec2.x)^2 + (vec1.y - vec2.y)^2);
+    }
+vecDot = #[desc("Returns the length of the projection of a vector onto another")]
+    (vec1: @Vector, vec2: @Vector) {
+        if vecIsNorm(vec1) && vecIsNorm(vec2) { vecNorm(vec2) }
+        return vec1.x * vec2.x + vec1.y * vec2.y
+    }
+
+//transform
+vecToObj = #[desc("Transforms vector to object position & rotation")]
+    (vec1: @Vector, object: @number = 1766) {
+        return obj{OBJ_ID: object, X: vec1.x*30, Y: vec1.y*30, ROTATION: vecRot(vec1)}
+    };
+vecToMove = #[desc("Transforms vector to move trigger")]
+    (vec1: @Vector) { return trigger {OBJ_ID:901, MOVE_X:vec1.x, MOVE_Y:vec1.y} };
+vecToRot = #[desc("Transforms vector angle to rotate trigger")]
+    (vec1: @Vector) { return trigger {OBJ_ID:1346, ROTATE_DEGREES:vecRot(vec1)} };
+vecFromObj = #[desc("Transforms object to vector")]
+    (object: @object) { return @Vector::{x: object[X], y: object[Y]} };
+
+return { Vector: @Vector::new, 
+    add: vecAdd,
+    sub: vecSub, 
+    mult: vecMult, 
+    length: vecLength, 
+    norm: vecNorm,
+    isNorm: vecIsNorm, 
+    rot: vecRot,
+    distance: vecDistance,
+    dot: vecDot,
+    
+    toObj: vecToObj, 
+    toMove: vecToMove, 
+    toRot: vecToRot, 
+    fromObj: vecFromObj
+}
